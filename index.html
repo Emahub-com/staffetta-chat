@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staffetta — Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --notte:#1F2340;
+    --notte-2:#2B3059;
+    --corallo:#EE6C4D;
+    --corallo-soft:#F6A98A;
+    --crema:#F7F5F0;
+    --carta:#FFFFFF;
+    --grigio:#6A6F8C;
+    --oro:#D9A441;
+    --line:#E7E4DC;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Manrope',sans-serif;
+    background:var(--crema);
+    color:var(--notte);
+    height:100vh;
+    overflow:hidden;
+  }
+  .app{
+    display:flex;
+    height:100vh;
+  }
+
+  /* Sidebar */
+  .sidebar{
+    width:320px;
+    background:var(--notte);
+    color:var(--crema);
+    display:flex;
+    flex-direction:column;
+    flex-shrink:0;
+  }
+  .brand{
+    padding:24px 22px 18px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .brand h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0 0 2px;
+    letter-spacing:0.2px;
+  }
+  .brand p{
+    margin:0;
+    font-size:12.5px;
+    color:#A6ABCC;
+  }
+  .plan-toggle{
+    margin:16px 22px 4px;
+    display:flex;
+    background:rgba(255,255,255,0.07);
+    border-radius:999px;
+    padding:3px;
+    gap:3px;
+  }
+  .plan-toggle button{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:#A6ABCC;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.4px;
+    padding:8px 0;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+  .plan-toggle button.active{
+    background:var(--corallo);
+    color:var(--notte);
+  }
+  .storage-ring-wrap{
+    margin:18px 22px 6px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px;
+    background:rgba(255,255,255,0.05);
+    border-radius:var(--radius);
+  }
+  .ring{
+    width:44px;height:44px;flex-shrink:0;
+  }
+  .ring circle{fill:none;stroke-width:4;}
+  .ring .bg{stroke:rgba(255,255,255,0.12);}
+  .ring .fg{stroke:var(--oro);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .4s ease;}
+  .storage-text .label{font-size:11px;color:#A6ABCC;margin:0;}
+  .storage-text .value{font-size:13px;font-weight:700;margin:1px 0 0;}
+  .lock-note{
+    font-size:11px;
+    color:#8288AA;
+    margin:0 22px 10px;
+  }
+
+  .contacts{
+    flex:1;
+    overflow-y:auto;
+    padding:6px 10px 12px;
+  }
+  .contact{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    position:relative;
+  }
+  .contact:hover{background:rgba(255,255,255,0.06);}
+  .contact.active{background:rgba(238,108,77,0.16);}
+  .avatar{
+    width:40px;height:40px;border-radius:50%;
+    background:linear-gradient(135deg,var(--corallo),var(--oro));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:14px;color:var(--notte);
+    flex-shrink:0;
+  }
+  .contact-info{overflow:hidden;}
+  .contact-info .name{font-size:14px;font-weight:700;margin:0;}
+  .contact-info .preview{font-size:12px;color:#9EA3C4;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .contact.locked{opacity:0.45;cursor:not-allowed;}
+  .contact .badge-lock{
+    margin-left:auto;font-size:10px;background:rgba(255,255,255,0.1);
+    padding:3px 7px;border-radius:999px;color:#C7CBE4;flex-shrink:0;
+  }
+  .new-group-btn{
+    margin:4px 12px 10px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:10px;border-radius:12px;
+    border:1px dashed rgba(255,255,255,0.25);
+    background:transparent;color:#C7CBE4;
+    font-family:'Manrope',sans-serif;font-weight:600;font-size:13px;
+    cursor:pointer;
+  }
+  .new-group-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+  /* Main chat */
+  .main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    background:var(--carta);
+  }
+  .chat-header{
+    padding:18px 28px;
+    border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;
+  }
+  .chat-header .avatar{width:38px;height:38px;font-size:13px;}
+  .chat-header h2{font-family:'Fraunces',serif;font-size:18px;margin:0;font-weight:600;}
+  .chat-header .status{font-size:12px;color:var(--grigio);margin:2px 0 0;}
+
+  .messages{
+    flex:1;
+    overflow-y:auto;
+    padding:26px 28px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .msg{
+    max-width:60%;
+    padding:11px 15px;
+    border-radius:16px;
+    font-size:14.5px;
+    line-height:1.45;
+  }
+  .msg.them{
+    background:var(--crema);
+    border:1px solid var(--line);
+    align-self:flex-start;
+    border-bottom-left-radius:4px;
+  }
+  .msg.me{
+    background:var(--corallo);
+    color:#fff;
+    align-self:flex-end;
+    border-bottom-right-radius:4px;
+  }
+  .msg .time{
+    display:block;font-size:10px;margin-top:4px;opacity:0.65;
+  }
+  .attach-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(0,0,0,0.06);
+    padding:6px 10px;border-radius:8px;font-size:12.5px;margin-top:6px;
+  }
+  .msg.me .attach-chip{background:rgba(255,255,255,0.22);}
+
+  .composer{
+    display:flex;align-items:center;gap:10px;
+    padding:16px 22px;
+    border-top:1px solid var(--line);
+  }
+  .composer input[type=text]{
+    flex:1;
+    border:1px solid var(--line);
+    background:var(--crema);
+    padding:12px 16px;
+    border-radius:999px;
+    font-family:'Manrope',sans-serif;
+    font-size:14px;
+    outline:none;
+  }
+  .composer input[type=text]:focus{border-color:var(--corallo-soft);}
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--carta);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--notte);flex-shrink:0;position:relative;
+  }
+  .icon-btn:disabled{opacity:0.35;cursor:not-allowed;}
+  .icon-btn.send{
+    background:var(--notte);border-color:var(--notte);color:#fff;
+  }
+  .pro-pin{
+    position:absolute;top:-4px;right:-4px;
+    background:var(--oro);color:var(--notte);
+    font-size:9px;font-weight:800;
+    width:15px;height:15px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .upsell-banner{
+    margin:0 22px 14px;
+    padding:12px 14px;
+    background:linear-gradient(135deg, rgba(238,108,77,0.12), rgba(217,164,65,0.12));
+    border:1px solid rgba(217,164,65,0.3);
+    border-radius:12px;
+    font-size:12px;color:#DCCFAE;
+    display:none;
+  }
+  .upsell-banner.show{display:block;}
+  .upsell-banner b{color:var(--oro);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Staffetta</h1>
+      <p>La tua messaggistica, senza fronzoli</p>
+    </div>
+
+    <div class="plan-toggle">
+      <button id="btnFree" class="active">GRATIS</button>
+      <button id="btnPro">PRO</button>
+    </div>
+    <button id="redeemBtn" style="margin:8px 22px 0;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#C7CBE4;font-family:'Manrope',sans-serif;font-size:11.5px;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;">
+      Ho già acquistato Pro — riscatta codice
+    </button>
+
+    <div class="storage-ring-wrap">
+      <svg class="ring" viewBox="0 0 44 44">
+        <circle class="bg" cx="22" cy="22" r="18"></circle>
+        <circle id="ringFg" class="fg" cx="22" cy="22" r="18" stroke-dasharray="113" stroke-dashoffset="90"></circle>
+      </svg>
+      <div class="storage-text">
+        <p class="label" id="storageLabel">Archiviazione</p>
+        <p class="value" id="storageValue">0,2 GB / 1 GB</p>
+      </div>
+    </div>
+    <p class="lock-note" id="lockNote">Piano Gratis: solo testo, 1 conversazione attiva.</p>
+
+    <button class="new-group-btn" id="newGroupBtn" disabled>+ Nuovo gruppo (Pro)</button>
+
+    <div class="contacts" id="contacts"></div>
+  </aside>
+
+  <main class="main">
+    <div class="chat-header">
+      <div class="avatar" id="headerAvatar">GV</div>
+      <div>
+        <h2 id="headerName">Giulia Verdi</h2>
+        <p class="status">online ora</p>
+      </div>
+    </div>
+
+    <div class="upsell-banner" id="upsellBanner">
+      Hai raggiunto il limite del piano Gratis. <a href="https://torvero.gumroad.com/l/zqlmpm" target="_blank" style="color:var(--oro);font-weight:800;text-decoration:none;">Passa a Pro</a> per allegati, gruppi e 20 GB di spazio. Dopo l'acquisto, usa il codice che ricevi via email nel pulsante "Riscatta codice" qui a sinistra.
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="composer">
+      <button class="icon-btn" id="attachBtn" title="Allega file (Pro)">
+        📎
+        <span class="pro-pin" id="attachPin">•</span>
+      </button>
+      <input type="text" id="msgInput" placeholder="Scrivi un messaggio…">
+      <button class="icon-btn send" id="sendBtn">➤</button>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAx7tq4o5qEVKRY5wXDnv2wrPqe5OjS67I",
+    authDomain: "staffetta-chat.firebaseapp.com",
+    projectId: "staffetta-chat",
+    storageBucket: "staffetta-chat.firebasestorage.app",
+    messagingSenderId: "564058695037",
+    appId: "1:564058695037:web:2a9c6d1978e9d680015814",
+    measurementId: "G-4KN980F530"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  // Accesso anonimo: ogni persona che apre il sito ottiene un'identità unica
+  // senza dover inserire email o password.
+  signInAnonymously(auth).catch((err) => {
+    console.error('Errore nel login anonimo:', err);
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      window.currentUserId = user.uid;
+      // Avvisiamo lo script "normale" qui sotto che Firebase è pronto.
+      window.dispatchEvent(new Event('firebase-ready'));
+    }
+  });
+
+  // Rendiamo db e le funzioni di Firestore disponibili allo script "normale"
+  // qui sotto, che non è di tipo module e quindi non può usare import/export.
+  window.db = db;
+  window.fb = { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc, setDoc };
+</script>
+
+<script>
+const state = {
+  plan: 'free', // 'free' | 'pro'
+  activeContact: 0,
+};
+
+const contactsData = [
+  { name:'Giulia Verdi', initials:'GV', preview:'Ci vediamo alle 8?', proOnly:false,
+    messages:[
+      {from:'them', text:'Ciao! Tutto bene?', time:'10:02'},
+      {from:'me', text:'Sì tutto ok, tu?', time:'10:03'},
+      {from:'them', text:'Ci vediamo alle 8?', time:'10:04'},
+    ]},
+  { name:'Team Progetto', initials:'TP', preview:'Marco: mando il file', proOnly:true,
+    messages:[
+      {from:'them', text:'Iniziamo la riunione tra 5 minuti', time:'09:10'},
+      {from:'them', text:'Mando il file', time:'09:14', attach:'progetto_finale.pdf'},
+    ]},
+  { name:'Luca Bianchi', initials:'LB', preview:'Foto ricevuta', proOnly:true,
+    messages:[
+      {from:'them', text:'Guarda qui', time:'08:40', attach:'foto_viaggio.jpg'},
+      {from:'me', text:'Bellissima!', time:'08:41'},
+    ]},
+];
+
+const contactsEl = document.getElementById('contacts');
+const messagesEl = document.getElementById('messages');
+const headerName = document.getElementById('headerName');
+const headerAvatar = document.getElementById('headerAvatar');
+const btnFree = document.getElementById('btnFree');
+const btnPro = document.getElementById('btnPro');
+const lockNote = document.getElementById('lockNote');
+const upsellBanner = document.getElementById('upsellBanner');
+const attachBtn = document.getElementById('attachBtn');
+const attachPin = document.getElementById('attachPin');
+const newGroupBtn = document.getElementById('newGroupBtn');
+const ringFg = document.getElementById('ringFg');
+const storageValue = document.getElementById('storageValue');
+const storageLabel = document.getElementById('storageLabel');
+
+function renderContacts(){
+  contactsEl.innerHTML = '';
+  contactsData.forEach((c, i) => {
+    const locked = c.proOnly && state.plan === 'free';
+    const div = document.createElement('div');
+    div.className = 'contact' + (i === state.activeContact ? ' active' : '') + (locked ? ' locked' : '');
+    div.innerHTML = `
+      <div class="avatar">${c.initials}</div>
+      <div class="contact-info">
+        <p class="name">${c.name}</p>
+        <p class="preview">${locked ? 'Disponibile con Pro' : c.preview}</p>
+      </div>
+      ${locked ? '<span class="badge-lock">PRO</span>' : ''}
+    `;
+    if(!locked){
+      div.onclick = () => { state.activeContact = i; render(); };
+    }
+    contactsEl.appendChild(div);
+  });
+}
+
+function renderMessages(){
+  const c = contactsData[state.activeContact];
+  headerName.textContent = c.name;
+  headerAvatar.textContent = c.initials;
+  messagesEl.innerHTML = '';
+  c.messages.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'msg ' + (m.from === 'me' ? 'me' : 'them');
+    div.innerHTML = `${m.text}${m.attach ? `<div class="attach-chip">📎 ${m.attach}</div>` : ''}<span class="time">${m.time}</span>`;
+    messagesEl.appendChild(div);
+  });
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function renderPlanUI(){
+  const isPro = state.plan === 'pro';
+  btnFree.classList.toggle('active', !isPro);
+  btnPro.classList.toggle('active', isPro);
+  attachBtn.disabled = !isPro;
+  attachPin.style.display = isPro ? 'none' : 'flex';
+  newGroupBtn.disabled = !isPro;
+  upsellBanner.classList.toggle('show', !isPro);
+  lockNote.textContent = isPro
+    ? 'Piano Pro: allegati, gruppi illimitati, 20 GB.'
+    : 'Piano Gratis: solo testo, 1 conversazione attiva.';
+
+  const pct = isPro ? 0.18 : 0.75; // pro has way more space, so % used looks lower
+  const circumference = 113;
+  ringFg.setAttribute('stroke-dashoffset', circumference - (circumference * pct));
+  storageValue.textContent = isPro ? '3,6 GB / 20 GB' : '0,75 GB / 1 GB';
+  storageLabel.textContent = 'Archiviazione';
+
+  if(!isPro && contactsData[state.activeContact].proOnly){
+    state.activeContact = 0;
+  }
+}
+
+function render(){
+  renderPlanUI();
+  renderContacts();
+  renderMessages();
+}
+
+// --- Collegamento a Firebase per la prima conversazione (Giulia) ---
+// Usiamo una "stanza" condivisa fissa: se apri questo sito su due
+// computer/browser diversi, entrambi vedranno e potranno scrivere
+// nella stessa conversazione, in tempo reale.
+const CHAT_ID = 'demo-giulia';
+let unsubscribeMessages = null;
+
+function listenToFirestoreChat(){
+  if(unsubscribeMessages) unsubscribeMessages(); // chiude un eventuale ascolto precedente
+  const { collection, query, orderBy, onSnapshot } = window.fb;
+  const messagesRef = collection(window.db, 'chats', CHAT_ID, 'messages');
+  const q = query(messagesRef, orderBy('createdAt', 'asc'));
+
+  unsubscribeMessages = onSnapshot(q, (snapshot) => {
+    contactsData[0].messages = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return {
+        from: data.senderId === window.currentUserId ? 'me' : 'them',
+        text: data.text,
+        time: data.createdAt
+          ? data.createdAt.toDate().toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})
+          : '...'
+      };
+    });
+    if(state.activeContact === 0) renderMessages();
+  }, (err) => {
+    console.error('Errore nel leggere i messaggi da Firestore:', err);
+  });
+}
+
+window.addEventListener('firebase-ready', () => {
+  listenToFirestoreChat();
+  checkExistingProStatus();
+});
+
+// --- Gumroad: sblocco reale del piano Pro ---
+const GUMROAD_PRODUCT_ID = 'sWF_J6XNAXm6mR6B0Gf7Xw==';
+
+// Al caricamento, controlliamo se questo utente aveva già sbloccato Pro
+// in precedenza (salvato su Firestore), così non deve reinserire il codice
+// ogni volta che torna sul sito.
+async function checkExistingProStatus(){
+  const { doc, getDoc } = window.fb;
+  const userRef = doc(window.db, 'users', window.currentUserId);
+  const snap = await getDoc(userRef);
+  if(snap.exists() && snap.data().plan === 'pro'){
+    state.plan = 'pro';
+    render();
+  }
+}
+
+async function redeemLicense(){
+  const key = prompt('Incolla qui il codice licenza ricevuto via email da Gumroad dopo l\'acquisto:');
+  if(!key) return;
+
+  const btn = document.getElementById('redeemBtn');
+  btn.textContent = 'Verifica in corso…';
+  btn.disabled = true;
+
+  try{
+    const body = new URLSearchParams();
+    body.append('product_id', GUMROAD_PRODUCT_ID);
+    body.append('license_key', key.trim());
+
+    const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+      method: 'POST',
+      body,
+    });
+    const data = await response.json();
+
+    if(data.success){
+      // Codice valido: salviamo lo sblocco su Firestore, legato a questo utente,
+      // così resta Pro anche quando ricarica la pagina o torna il giorno dopo.
+      const { doc, setDoc } = window.fb;
+      await setDoc(doc(window.db, 'users', window.currentUserId), {
+        plan: 'pro',
+        licenseKey: key.trim(),
+        unlockedAt: new Date().toISOString()
+      }, { merge: true });
+
+      state.plan = 'pro';
+      render();
+      alert('Piano Pro sbloccato! Grazie per il supporto.');
+    } else {
+      alert('Codice non valido: ' + (data.message || 'controlla di averlo copiato correttamente.'));
+    }
+  } catch(err){
+    console.error('Errore nella verifica della licenza:', err);
+    alert('Non è stato possibile verificare il codice ora. Riprova tra poco.');
+  } finally {
+    btn.textContent = 'Ho già acquistato Pro — riscatta codice';
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('redeemBtn').onclick = redeemLicense;
+
+btnFree.onclick = () => { state.plan = 'free'; render(); };
+btnPro.onclick = () => { state.plan = 'pro'; render(); };
+
+document.getElementById('sendBtn').onclick = sendMessage;
+document.getElementById('msgInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter') sendMessage();
+});
+
+function sendMessage(){
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if(!text) return;
+
+  if(state.activeContact === 0 && window.db && window.currentUserId){
+    // Conversazione collegata a Firebase: scriviamo su Firestore.
+    // Il messaggio comparirà da solo grazie a onSnapshot, non serve
+    // aggiungerlo "a mano" qui.
+    const { collection, addDoc, serverTimestamp } = window.fb;
+    addDoc(collection(window.db, 'chats', CHAT_ID, 'messages'), {
+      text,
+      senderId: window.currentUserId,
+      createdAt: serverTimestamp()
+    }).catch(err => console.error('Errore nell\'invio del messaggio:', err));
+    input.value = '';
+    return;
+  }
+
+  // Le altre conversazioni restano dati di esempio (non collegate a Firebase).
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  contactsData[state.activeContact].messages.push({from:'me', text, time});
+  input.value = '';
+  renderMessages();
+}
+
+attachBtn.onclick = () => {
+  if(attachBtn.disabled) return;
+  contactsData[state.activeContact].messages.push({from:'me', text:'Ho allegato un file:', time:'ora', attach:'documento.pdf'});
+  renderMessages();
+};
+
+newGroupBtn.onclick = () => {
+  if(newGroupBtn.disabled) return;
+  alert('In una versione reale, qui si aprirebbe la creazione di un nuovo gruppo.');
+};
+
+render();
+</script>
+</body>
+</html>
